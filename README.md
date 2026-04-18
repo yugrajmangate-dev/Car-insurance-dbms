@@ -17,9 +17,18 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-3. Update database credentials
+3. Configure database credentials (recommended: environment variables)
 
-Open `app.py` and set your MySQL password on the `get_db_connection()` function, or modify the app to read from environment variables.
+Create a `.env` file in the project root (do NOT commit it) based on `.env.example` and set `MYSQL_PASSWORD` and any other values you need. The app uses `python-dotenv` in development to load `.env` values. Example `.env` (copy from `.env.example`):
+
+```text
+MYSQL_HOST=localhost
+MYSQL_USER=root
+MYSQL_PASSWORD=your_mysql_password_here
+MYSQL_DB=vehicle_insurance_db
+```
+
+Alternatively you can set environment variables directly in your shell.
 
 4. Run the app
 

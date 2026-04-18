@@ -1,16 +1,28 @@
 from flask import Flask, render_template, request, redirect, url_for
 import mysql.connector
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # load environment variables from a .env file if present
 
 app = Flask(__name__)
 
 # --- Database Connection Setup ---
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="[REDACTED]",  # IMPORTANT: change if different
-        database="vehicle_insurance_db"
-    )
+    """Return a MySQL connection using environment variables.
+
+    Environment variables:
+      - MYSQL_HOST (default: localhost)
+      - MYSQL_USER (default: root)
+      - MYSQL_PASSWORD (no default; set in your environment or .env)
+      - MYSQL_DB (default: vehicle_insurance_db)
+    """
+    host = os.environ.get('MYSQL_HOST', 'localhost')
+    user = os.environ.get('MYSQL_USER', 'root')
+    password = os.environ.get('MYSQL_PASSWORD')  # can be None
+    database = os.environ.get('MYSQL_DB', 'vehicle_insurance_db')
+
+    return mysql.connector.connect(host=host, user=user, password=password, database=database)
 
 # --- Home Page Route (Read) ---
 @app.route('/')
