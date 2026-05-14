@@ -3,66 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Insurance Dashboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        h2 { color: #333; text-align: center; border-bottom: 2px solid #007BFF; padding-bottom: 10px; }
-        
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #007BFF; color: white; }
-        tr:hover { background-color: #f1f1f1; }
-
-        /* Form Styles */
-        form { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; margin-top: 15px;}
-        input[type="text"], input[type="number"], input[type="email"] {
-            flex: 1 1 30%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;
-        }
-        button { padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;}
-        button:hover { background-color: #218838; }
-    </style>
+    <title>NovaDrive Insurance Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+    <div class="aurora aurora-one"></div>
+    <div class="aurora aurora-two"></div>
 
-<div class="container">
-    <h2>Registered Customers Dashboard</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Customer ID</th>
-                <th>Name</th>
-                <th>Mobile Number</th>
-                <th>Email</th>
-                <th>Location</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for customer in customers_data %}
-            <tr>
-                <td>{{ customer.cus_id }}</td>
-                <td>{{ customer.cus_name }}</td>
-                <td>{{ customer.cus_mobile }}</td>
-                <td>{{ customer.cus_email }}</td>
-                <td>{{ customer.cus_add }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <main class="page-shell">
+        <nav class="top-nav reveal">
+            <div class="brand-block">
+                <span class="brand-logo">ND</span>
+                <div>
+                    <div class="brand-title">NovaDrive Insurance</div>
+                    <div class="brand-subtitle">Digital Motor Insurance Desk</div>
+                </div>
+            </div>
+            <div class="nav-actions">
+                {% if current_user %}
+                    <a class="btn-secondary" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+                    <a class="btn-outline" href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a class="btn-secondary" href="{{ url_for('login') }}">Admin Login</a>
+                {% endif %}
+            </div>
+        </nav>
 
-<div class="container">
-    <h2>Add New Customer</h2>
-    <form action="/add_customer" method="POST">
-        <input type="number" name="cus_id" placeholder="Customer ID (e.g. 103)" required>
-        <input type="text" name="cus_name" placeholder="Full Name" required>
-        <input type="text" name="cus_mobile" placeholder="Mobile Number" required>
-        <input type="email" name="cus_email" placeholder="Email Address" required>
-        <input type="text" name="cus_add" placeholder="City, State" required>
-        <button type="submit">Register</button>
-    </form>
-</div>
+        <header class="hero-card reveal">
+            <div class="hero-chip">Motor Insurance Intake Portal</div>
+            <h1>Submit A Complete Vehicle Insurance Application</h1>
+            <p>Capture customer, vehicle, and risk details in one digital flow. Your request is sent to underwriting and receives acknowledgement through configured email/SMS channels.</p>
+            <div class="hero-meta">
+                <span>Fast digital onboarding</span>
+                <span>Rule-based quote estimate</span>
+                <span>MySQL-backed records</span>
+            </div>
+        </header>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="alerts reveal">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        {% if db_error %}
+            <section class="alerts reveal">
+                <div class="alert error">{{ db_error }}</div>
+            </section>
+        {% endif %}
+
+        <section class="workspace-grid">
+            <section class="glass-panel form-panel reveal">
+                <div class="panel-title-wrap">
+                    <h2>New Insurance Application</h2>
+                    <div class="quote-preview">
+                        <div class="quote-label">Live Estimate</div>
+                        <div class="quote-value" id="premiumPreview">INR 0</div>
+                    </div>
+                </div>
+
+                <form class="intake-form" action="{{ url_for('submit_application') }}" method="POST" id="insuranceForm">
+                    <fieldset>
+                        <legend>Applicant Details</legend>
+                        <div class="input-grid two-col">
+                            <label>Full Name
+                                <input type="text" name="full_name" placeholder="Riya Sharma" required>
+                            </label>
+                            <label>Email
+                                <input type="email" name="email" placeholder="riya@email.com" required>
+                            </label>
+                            <label>Phone
+                                <input type="tel" name="phone" placeholder="9876543210" required>
+                            </label>
+                            <label>Date Of Birth
+                                <input type="date" name="dob" required>
+                            </label>
+                            <label>City
+                                <input type="text" name="city" placeholder="Mumbai" required>
+                            </label>
+                            <label>State
+                                <input type="text" name="state" placeholder="Maharashtra" required>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Vehicle Information</legend>
+                        <div class="input-grid three-col">
+                            <label>Make
+                                <input type="text" name="vehicle_make" placeholder="Hyundai" required>
+                            </label>
+                            <label>Model
+                                <input type="text" name="vehicle_model" placeholder="Creta" required>
+                            </label>
+                            <label>Year
+                                <input type="number" name="vehicle_year" value="{{ current_year }}" min="1980" max="{{ current_year + 1 }}" required>
+                            </label>
+                            <label>Insured Declared Value (INR)
+                                <input type="number" name="vehicle_value" id="vehicleValue" min="100000" step="1000" placeholder="900000" required>
+                            </label>
+                            <label>Fuel Type
+                                <select name="fuel_type" required>
+                                    <option value="">Select</option>
+                                    <option value="Petrol">Petrol</option>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="CNG">CNG</option>
+                                    <option value="Electric">Electric</option>
+                                </select>
+                            </label>
+                            <label>Usage Type
+                                <select name="usage_type" id="usageType" required>
+                                    <option value="">Select</option>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Commercial">Commercial</option>
+                                </select>
+                            </label>
+                            <label>Annual Distance (KM)
+                                <input type="number" name="annual_km" min="1000" step="500" placeholder="12000" required>
+                            </label>
+                            <label>Prior Claims
+                                <input type="number" name="prior_claims" id="priorClaims" min="0" max="10" value="0">
+                            </label>
+                            <label>Accidents In Last 5 Years
+                                <input type="number" name="accidents_last_5y" id="accidents" min="0" max="10" value="0">
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Coverage & Risk Selection</legend>
+                        <div class="input-grid two-col">
+                            <label>Coverage Type
+                                <select name="coverage_type" id="coverageType" required>
+                                    <option value="">Select</option>
+                                    <option value="Third Party">Third Party</option>
+                                    <option value="Comprehensive">Comprehensive</option>
+                                    <option value="Zero Depreciation">Zero Depreciation</option>
+                                </select>
+                            </label>
+                            <label>Deductible Amount (INR)
+                                <input type="number" name="deductible_amount" id="deductibleAmount" min="0" step="500" value="5000" required>
+                            </label>
+                        </div>
+
+                        <div class="addons-wrap">
+                            <span class="addons-title">Optional Add-Ons</span>
+                            <div class="addons-grid" id="addonsGroup">
+                                <label><input type="checkbox" name="add_ons" value="Roadside Assistance">Roadside Assistance</label>
+                                <label><input type="checkbox" name="add_ons" value="Engine Protect">Engine Protect</label>
+                                <label><input type="checkbox" name="add_ons" value="Return To Invoice">Return To Invoice</label>
+                                <label><input type="checkbox" name="add_ons" value="Consumables Cover">Consumables Cover</label>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="submit-btn">Submit For Underwriting</button>
+                </form>
+            </section>
+
+            <section class="glass-panel info-panel reveal">
+                <h2>How Your Request Is Processed</h2>
+                <p class="subtext">A simplified real-world flow for insurance operations.</p>
+                <div class="timeline-list">
+                    <article class="timeline-item">
+                        <h3>1. Application Submitted</h3>
+                        <p>Customer details and vehicle risk profile are captured with premium estimate logic.</p>
+                    </article>
+                    <article class="timeline-item">
+                        <h3>2. Acknowledgement Triggered</h3>
+                        <p>System attempts email and SMS acknowledgement using configured provider credentials.</p>
+                    </article>
+                    <article class="timeline-item">
+                        <h3>3. Underwriter Review</h3>
+                        <p>Authorized users can review, approve, or reject requests from the secure dashboard.</p>
+                    </article>
+                    <article class="timeline-item">
+                        <h3>4. Policy PDF Generated</h3>
+                        <p>On approval, a policy number is assigned and a downloadable policy PDF is produced.</p>
+                    </article>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | NovaDrive Insurance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="dashboard-body">
+    <div class="aurora aurora-one"></div>
+    <div class="aurora aurora-two"></div>
+
+    <main class="page-shell dashboard-shell">
+        <nav class="top-nav reveal">
+            <div class="brand-block">
+                <span class="brand-logo">ND</span>
+                <div>
+                    <div class="brand-title">NovaDrive Insurance</div>
+                    <div class="brand-subtitle">Underwriting Dashboard</div>
+                </div>
+            </div>
+            <div class="nav-actions">
+                <span class="role-pill">{{ current_user.full_name }} ({{ current_user.role|title }})</span>
+                <a class="btn-secondary" href="{{ url_for('index') }}">Public Form</a>
+                <a class="btn-outline" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </nav>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <section class="alerts reveal">
+                    {% for category, message in messages %}
+                        <div class="alert {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </section>
+            {% endif %}
+        {% endwith %}
+
+        <section class="stats-grid reveal">
+            <article class="stat-card">
+                <div class="stat-label">Total Applications</div>
+                <div class="stat-value">{{ counts.total_count or 0 }}</div>
+            </article>
+            <article class="stat-card pending">
+                <div class="stat-label">Pending Review</div>
+                <div class="stat-value">{{ counts.pending_count or 0 }}</div>
+            </article>
+            <article class="stat-card review">
+                <div class="stat-label">Under Review</div>
+                <div class="stat-value">{{ counts.under_review_count or 0 }}</div>
+            </article>
+            <article class="stat-card approved">
+                <div class="stat-label">Approved</div>
+                <div class="stat-value">{{ counts.approved_count or 0 }}</div>
+            </article>
+            <article class="stat-card rejected">
+                <div class="stat-label">Rejected</div>
+                <div class="stat-value">{{ counts.rejected_count or 0 }}</div>
+            </article>
+        </section>
+
+        <section class="glass-panel table-panel reveal">
+            <div class="table-head-row">
+                <h2>Application Queue</h2>
+                <form method="GET" action="{{ url_for('admin_dashboard') }}" class="filter-form">
+                    <label>Status Filter
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                            <option value="Pending Review" {% if status_filter == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+                            <option value="Under Review" {% if status_filter == 'Under Review' %}selected{% endif %}>Under Review</option>
+                            <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved</option>
+                            <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </label>
+                </form>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Applicant</th>
+                            <th>Contact</th>
+                            <th>Vehicle</th>
+                            <th>Coverage</th>
+                            <th>Premium</th>
+                            <th>Status</th>
+                            <th>Ack</th>
+                            <th>Policy</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in applications %}
+                            <tr>
+                                <td>#{{ item.application_id }}</td>
+                                <td>
+                                    <strong>{{ item.full_name }}</strong><br>
+                                    <small>{{ item.email }}</small>
+                                </td>
+                                <td>{{ item.phone }}</td>
+                                <td>{{ item.vehicle_make }} {{ item.vehicle_model }}</td>
+                                <td>{{ item.coverage_type }}</td>
+                                <td>INR {{ "{:,.2f}".format(item.estimated_premium) }}</td>
+                                <td>
+                                    <span class="status-pill status-{{ item.application_status|lower|replace(' ', '-') }}">
+                                        {{ item.application_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if item.notification_email_sent %}Email{% else %}No Email{% endif %}
+                                    /
+                                    {% if item.notification_sms_sent %}SMS{% else %}No SMS{% endif %}
+                                </td>
+                                <td>
+                                    {% if item.policy_number %}
+                                        {{ item.policy_number }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.created_at_display }}</td>
+                                <td>
+                                    <div class="action-group">
+                                        {% if item.application_status in ['Pending Review', 'Under Review'] %}
+                                            <form method="POST" action="{{ url_for('mark_under_review', application_id=item.application_id) }}">
+                                                <button type="submit" class="btn-mini neutral">Review</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if current_user.role == 'admin' and item.application_status != 'Approved' %}
+                                            <form method="POST" action="{{ url_for('approve_application', application_id=item.application_id) }}">
+                                                <button type="submit" class="btn-mini success">Approve + PDF</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if current_user.role == 'admin' and item.application_status not in ['Rejected', 'Approved'] %}
+                                            <form method="POST" action="{{ url_for('reject_application', application_id=item.application_id) }}">
+                                                <button type="submit" class="btn-mini danger">Reject</button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if item.application_status == 'Approved' %}
+                                            <a class="btn-mini outline" href="{{ url_for('download_policy_pdf', application_id=item.application_id) }}">Download PDF</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="11" class="empty-cell">No applications match this filter.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
